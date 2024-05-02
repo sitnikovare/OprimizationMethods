@@ -33,9 +33,9 @@ def build_simplex(x, l, n):
         xi = [0, 0]
         for j in range (1, n_rest + 1):
             if i == j + 1:
-                xi[j-1] = x[j-1] + (math.sqrt(n_rest + 1) - 1) / (n_rest * math.sqrt(2)) * l
+                xi[j-1] = x[0] + (math.sqrt(n_rest + 1) - 1) / (n_rest * math.sqrt(2)) * l
             else:
-                xi[j-1] = x[j-1] + (math.sqrt(n_rest + 1) + n_rest - 1) / (n_rest * math.sqrt(2)) * l
+                xi[j-1] = x[1] + (math.sqrt(n_rest + 1) + n_rest - 1) / (n_rest * math.sqrt(2)) * l
         simplex.append(xi)
     # сортировка для правильной нумерации вершин
     simplex.sort(key=sort_by_func_value, reverse=True)
@@ -46,10 +46,10 @@ def get_symmetric_point(simplex, max_point=0):
     x_max_point = simplex[max_point]
     sum_x1_sym = 0
     sum_x2_sym = 0
-    for x in simplex:
+    for x in simplex[1:]:
         sum_x1_sym += x[0]
         sum_x2_sym += x[1]
-    n2 = 2 / len(simplex)
+    n2 = 2 / (len(simplex) - 1)
     return [n2 * sum_x1_sym - x_max_point[0], n2 * sum_x2_sym - x_max_point[1]]    
 
 # обновление симплекса после отражения вершины
@@ -68,20 +68,26 @@ def simplex_reduction(simplex, delta, l):
     # точка симплекса с наименьшим значением функции
     xk1 = simplex[-1]
     new_simplex = [xk1]
-    for x in simplex:
-        x1_new = x[0] = delta * (x[0] - xk1[0])
-        x2_new = x[1] = delta * (x[1] - xk1[1])
+    for x in simplex[:len(simplex)-1]:
+        x1_new = xk1[0] + delta * (x[0] - xk1[0])
+        x2_new = xk1[1] + delta * (x[1] - xk1[1])
         new_simplex.append([x1_new, x2_new])
     new_simplex.sort(key=sort_by_func_value, reverse=True)
     print(f"--- Произведена редукция симплекса, новая длина ребра: {l}")
     return new_simplex, l
 
+def stop_criteria(simplex, x0):
+    f_x0 = func11(x0)
+    simplex_sum = 0
+    for xs in simplex:
+        simplex_sum += (func11(xs) - f_x0) * (func11(xs) - f_x0)
+    return 1 / (len(simplex)) * simplex_sum
 
 # Минимизация по методу правильного симплекса
 def regular_simplex(n, l, l_min, eps, x, delta):
     # построение симлекса
     simplex = build_simplex(x, l, n)
-    simplex.sort(key=sort_by_func_value)
+    print(f"Построен симплекс: {simplex}")
     # отражение вершины
     x_sym = get_symmetric_point(simplex)
     x = simplex[0]
@@ -95,12 +101,15 @@ def regular_simplex(n, l, l_min, eps, x, delta):
         # проверка условия останова
         f_sym = func11(x_sym)
         f_x = func11(x)
-        if abs(f_sym - f_x) < eps:
-            print(f"Достигнут критерий останова по eps: {abs(f_sym - f_x)}")
+        stop_check = stop_criteria(simplex, x)
+        if stop_check < eps * eps:
+            print(f"Достигнут критерий останова по eps: {stop_check} < {eps}")
             break
+        # проверка условия останова
         if f_sym < f_x:
             # обновление симплекса
             simplex = update_simplex(x_sym, simplex)
+            print(f"Вершины симплекса обновлены: {simplex}")
             x = simplex[0]
             # индекс точки для отражения
             max_point = 0
@@ -108,6 +117,7 @@ def regular_simplex(n, l, l_min, eps, x, delta):
             x_sym = get_symmetric_point(simplex, max_point)
         else:
             simplex, l = simplex_reduction(simplex, delta, l)
+            print(f"Симплекс редуцирован: {simplex}")
             # отражение другой вершины
             if max_point < len(simplex):
                 x_sym = get_symmetric_point(simplex, max_point)
@@ -124,9 +134,9 @@ if __name__ == "__main__":
     # длина ребра симплекса
     l = 2
     # минимальная длина ребра
-    l_min = 0.001
+    l_min = 0.0001
     # погрешность измерения
-    eps = 0.01
+    eps = 0.0001
     # коэффициент редукции симплекса
     delta = 0.5
     # начальная точка
