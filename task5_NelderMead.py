@@ -46,7 +46,7 @@ def get_middle(simplex):
     x1 = 0
     x2 = 0
     n = len(simplex)
-    for x in simplex:
+    for x in simplex[1:]:
         x1 += x[0]
         x2 += x[1]
     return [x1 / n, x2 / n]
@@ -57,8 +57,8 @@ def reflect(simplex, xc, alpha):
     return [(1 + alpha) * xc[0] - alpha * xh[0], (1 + alpha) * xc[1] - alpha * xh[1]]
 
 # операция растяжения
-def extention(xr, ghamma):
-    return [(1 + ghamma) * xr[0] + alpha * xr[0], (1 + ghamma) * xr[1] + alpha * xr[1]]
+def extention(xc, xr, ghamma):
+    return [(1 - ghamma) * xc[0] + ghamma * xr[0], (1 - ghamma) * xc[1] + ghamma * xr[1]]
 
 # операция сжатия
 def contraction(xh, xc, beta):
@@ -79,9 +79,9 @@ def stop_criteria(simplex):
     x0 = simplex[0]
     f_x0 = func11(x0)
     simplex_sum = 0
-    for xs in simplex:
+    for xs in simplex[1:]:
         simplex_sum += (func11(xs) - f_x0) * (func11(xs) - f_x0)
-    return 1 / (len(simplex)) * simplex_sum
+    return 1 / (len(simplex[1:])) * simplex_sum
 
 # редукция симплекса
 def simplex_reduction(simplex, delta, l):
@@ -97,14 +97,14 @@ def simplex_reduction(simplex, delta, l):
     print(f"--- Произведена редукция симплекса, новая длина ребра: {l}")
     return new_simplex, l
 
-def nelder_mead(n, l, l_min, eps, x, max_iter, alpha, beta, ghamma, delta):
+def nelder_mead(n, l, eps, x, alpha, beta, ghamma, delta):
     # построение симлекса
     simplex = build_simplex(x, l, n)
     print(f"Построен симплекс: {simplex}")
     iteration = 0
     while(True):
         iteration += 1
-        if stop_criteria(simplex) < eps * eps  or max_iter == iteration or l < l_min:
+        if stop_criteria(simplex) < eps * eps:
             print("Достигнут критерий останова")
             break
         # точка с наибольшим значением функции
@@ -124,7 +124,7 @@ def nelder_mead(n, l, l_min, eps, x, max_iter, alpha, beta, ghamma, delta):
         # можно попробовать растяжение
         if f_xr < f_xl:
             # точка, полученная с помощью операции растяжения
-            xe = extention(xr, ghamma)
+            xe = extention(xc, xr, ghamma)
             # значение функции в этой точке
             f_xe = func11(xe)
             # можно попробовать обновить симплекс
@@ -174,12 +174,8 @@ if __name__ == "__main__":
     n = 3
     # длина ребра симплекса
     l = 2
-    # минимальная длина ребра
-    l_min = 0.001
     # погрешность измерения
-    eps = 0.0001
-    # максимальное количество итераций
-    max_iter = 1000
+    eps = 0.001
     # начальная точка
     x = [-0.2, 2]
     # коэффициент отражения
@@ -191,5 +187,5 @@ if __name__ == "__main__":
     # коэффициент редукции симплекса
     delta = 0.5
     
-    x_min, f_min = nelder_mead(n, l, l_min, eps, x, max_iter, alpha, beta, ghamma, delta)
+    x_min, f_min = nelder_mead(n, l, eps, x, alpha, beta, ghamma, delta)
     check_answer(x_min, f_min)
