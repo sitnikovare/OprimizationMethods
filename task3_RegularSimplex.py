@@ -76,6 +76,7 @@ def simplex_reduction(simplex, delta, l):
     print(f"--- Произведена редукция симплекса, новая длина ребра: {l}")
     return new_simplex, l
 
+# вычисления значения для проверки услоавия останова
 def stop_criteria(simplex, x0):
     f_x0 = func11(x0)
     simplex_sum = 0
