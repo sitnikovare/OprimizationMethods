@@ -25,7 +25,18 @@ def sort_by_func_value(input):
 # l - длина ребра, 
 # n - количество точек симплекса
 # возвращает n точек построенного симплекса
-def build_simplex(x, l, n):
+# def build_simplex():
+#     # массив, содержащий точки симплекса
+#     simplex = [[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]]
+#     simplex.sort(key=sort_by_func_value, reverse=True)
+#     return simplex
+
+# Функция построения симплекса
+# x - заданная базовая точка, 
+# l - длина ребра, 
+# n - количество точек симплекса
+# возвращает n точек построенного симплекса
+def build_simplex(x=[0.0, 0.0], l=2, n=3):
     # массив, содержащий точки симплекса
     simplex = [x]
     n_rest = n - 1
@@ -43,141 +54,72 @@ def build_simplex(x, l, n):
 
 # получение середины отрезка между первыми двумя точками в симплексе
 def get_middle(simplex):
-    x1 = 0
-    x2 = 0
-    n = len(simplex)
-    for x in simplex[1:]:
-        x1 += x[0]
-        x2 += x[1]
-    return [x1 / n, x2 / n]
+    return [simplex[0][0] + simplex[1][0] / 2, simplex[0][1] + simplex[1][1] / 2]
 
-# операция отражения худшей точки
-def reflect(simplex, xc, alpha):
-    xh = simplex[0]
-    return [(1 + alpha) * xc[0] - alpha * xh[0], (1 + alpha) * xc[1] - alpha * xh[1]]
+# получение середины отрезка
+def get_center(a, b):
+    return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]
+
+# операция отражения точки
+def reflect(mid, alpha, w):
+    return [mid[0] + alpha * (mid[0] - w[0]), mid[1] + alpha * (mid[1] - w[1])]
 
 # операция растяжения
-def extention(xc, xr, ghamma):
-    return [(1 - ghamma) * xc[0] + ghamma * xr[0], (1 - ghamma) * xc[1] + ghamma * xr[1]]
+def extention(mid, gamma, xr):
+    return [mid[0] + gamma * (xr[0] - mid[0]), mid[1] + gamma * (xr[1] - mid[1])]
 
 # операция сжатия
-def contraction(xh, xc, beta):
-    return [beta * xh[0] + (1 - beta) * xc[0], beta * xh[0] + (1 - beta) * xc[0]]
+def contraction(mid, beta, w):
+    return [mid[0] + beta * (w[0] - mid[0]), mid[1] + beta * (w[1] - mid[1])]
 
-# обновление симплекса после отражения вершины
-def update_simplex(x_add, simplex):
-    # удаление отраженной вершины из симплекса
-    simplex.remove(simplex[-1])
-    # добавление отражения вершины в симплекс
-    simplex.append(x_add)
-    # соритровка симплкса
-    simplex.sort(key=sort_by_func_value, reverse=True)
-    return simplex
-
-# вычисления значения для проверки услоавия останова
-def stop_criteria(simplex):
-    x0 = simplex[0]
-    f_x0 = func11(x0)
-    simplex_sum = 0
-    for xs in simplex[1:]:
-        simplex_sum += (func11(xs) - f_x0) * (func11(xs) - f_x0)
-    return 1 / (len(simplex[1:])) * simplex_sum
-
-# редукция симплекса
-def simplex_reduction(simplex, delta, l):
-    l *= delta
-    # точка симплекса с наименьшим значением функции
-    xk1 = simplex[-1]
-    new_simplex = [xk1]
-    for x in simplex[:len(simplex)-1]:
-        x1_new = xk1[0] + delta * (x[0] - xk1[0])
-        x2_new = xk1[1] + delta * (x[1] - xk1[1])
-        new_simplex.append([x1_new, x2_new])
-    new_simplex.sort(key=sort_by_func_value, reverse=True)
-    print(f"--- Произведена редукция симплекса, новая длина ребра: {l}")
-    return new_simplex, l
-
-def nelder_mead(n, l, eps, x, alpha, beta, ghamma, delta):
+def nelder_mead(alpha, beta, ghamma, maxiter):
     # построение симлекса
-    simplex = build_simplex(x, l, n)
+    simplex = build_simplex()
     print(f"Построен симплекс: {simplex}")
-    iteration = 0
-    while(True):
-        iteration += 1
-        if stop_criteria(simplex) < eps * eps:
-            print("Достигнут критерий останова")
-            break
-        # точка с наибольшим значением функции
-        xh = simplex[0]
-        # центр тяжести
-        xc = get_middle(simplex)
-        # отражение точки
-        xr = reflect(simplex, xc, alpha)
-        # значение функции в отраженной точке
-        f_xr = func11(xr)
-        # наименьшее значение функции по симплексу
-        f_xl = func11(simplex[-1])
-        # среднее значение функции по симплексу
-        f_xg = func11(simplex[1])
-        # наибольшее значение функции по симплексу
-        f_xh = func11(simplex[0])
-        # можно попробовать растяжение
-        if f_xr < f_xl:
-            # точка, полученная с помощью операции растяжения
-            xe = extention(xc, xr, ghamma)
-            # значение функции в этой точке
-            f_xe = func11(xe)
-            # можно попробовать обновить симплекс
-            if f_xe < f_xr:
-                simplex = update_simplex(xe, simplex)
-                print(f"Симплекс обновлен точкой растяжения: {simplex}")
-                continue
-            # иначе переместились слишком далеко
+
+    for _ in range(maxiter):
+        # переобозначение точек симплекса
+        b = simplex[0]
+        g = simplex[1]
+        w = simplex[2]
+        # получение середины отрезка между двумя лучшими точками симплекса
+        mid = get_center(g, b)
+        # отражение точки симплекса
+        xr = reflect(mid, alpha, w)
+        # проверка для замены точек
+        if func11(xr) < func11(g):
+            w = xr
+        else:
+            if func11(xr) < func11(w):
+                w = xr
+            c = get_center(w, mid)
+            if func11(c) < func11(w):
+                w = c
+        if func11(xr) < func11(b):
+            # растяжение
+            xe = extention(mid, ghamma, xr)
+            if func11(xe) < func11(xr):
+                w = xe
             else:
-                # обновление симплекса
-                simplex = update_simplex(xr, simplex)
-                print(f"Симплекс обновлен точкой отражения, f_xe >= f_xr: {simplex}")
-                continue
-        # новая точка лучше двух прежних
-        elif f_xl < f_xr and f_xr < f_xg:
-            # обновление симплекса
-            simplex = update_simplex(xr, simplex)
-            print(f"Симплекс обновлен точкой отражения, f_xl < f_xr and f_xr < f_xg: {simplex}")
-            continue
-        # заменяем xh на xr
-        elif f_xg < f_xr and f_xr < f_xh:
-            # обновление симплекса
-            simplex = update_simplex(xr, simplex)
-            print(f"Симплекс обновлен точкой отражения, f_xg < f_xr and f_xr < f_xh: {simplex}")
-            # примение операции сжатия
-            xs = contraction(xh, xc, beta)
-            f_xs = func11(xs)
-            # проверяем точки после сжатия
-            if f_xs < f_xh:
-                # обновление симплекса точкой сжатия
-                simplex = update_simplex(xs, simplex)
-                print(f"Симплекс обновлен точкой сжатия: {simplex}")
-                continue
-        simplex, l = simplex_reduction(simplex, delta, l)
-        print(f"Симплекс редуцирован: {simplex}")
+                w = xr
+        if func11(xr) > func11(g):
+            # сжатие
+            xc = contraction(mid, beta, w)
+            if func11(xc) < func11(w):
+                w = xc
+        simplex = [w, g, b]
+        print(f"Cимплекс обновлен {simplex}")
+        simplex.sort(key=sort_by_func_value, reverse=True)
+
     # точка минимума функции
     x_min = simplex[-1]
     # значение функции в точке минимума
     f_min = func11(x_min)
-    print(f"Количество итераций: {iteration}")
     return x_min, f_min
 
 
 #-----------------------------------------------------------------------------#
 if __name__ == "__main__":
-    # количество точек симплекса
-    n = 3
-    # длина ребра симплекса
-    l = 2
-    # погрешность измерения
-    eps = 0.001
-    # начальная точка
-    x = [-0.2, 2]
     # коэффициент отражения
     alpha = 1
     # коэффициент сжатия
@@ -186,6 +128,8 @@ if __name__ == "__main__":
     ghamma = 2
     # коэффициент редукции симплекса
     delta = 0.5
+    # максимальное количество итераций
+    maxiter = 10
     
-    x_min, f_min = nelder_mead(n, l, eps, x, alpha, beta, ghamma, delta)
+    x_min, f_min = nelder_mead(alpha, beta, ghamma, maxiter)
     check_answer(x_min, f_min)
