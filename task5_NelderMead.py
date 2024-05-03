@@ -25,32 +25,32 @@ def sort_by_func_value(input):
 # l - длина ребра, 
 # n - количество точек симплекса
 # возвращает n точек построенного симплекса
-# def build_simplex():
-#     # массив, содержащий точки симплекса
-#     simplex = [[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]]
-#     simplex.sort(key=sort_by_func_value, reverse=True)
-#     return simplex
+def build_simplex():
+    # массив, содержащий точки симплекса
+    simplex = [[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]]
+    simplex.sort(key=sort_by_func_value)
+    return simplex
 
 # Функция построения симплекса
 # x - заданная базовая точка, 
 # l - длина ребра, 
 # n - количество точек симплекса
 # возвращает n точек построенного симплекса
-def build_simplex(x=[0.0, 0.0], l=2, n=3):
-    # массив, содержащий точки симплекса
-    simplex = [x]
-    n_rest = n - 1
-    for i in range(2, n_rest + 2):
-        xi = [0, 0]
-        for j in range (1, n_rest + 1):
-            if i == j + 1:
-                xi[j-1] = x[0] + (math.sqrt(n_rest + 1) - 1) / (n_rest * math.sqrt(2)) * l
-            else:
-                xi[j-1] = x[1] + (math.sqrt(n_rest + 1) + n_rest - 1) / (n_rest * math.sqrt(2)) * l
-        simplex.append(xi)
-    # сортировка для правильной нумерации вершин
-    simplex.sort(key=sort_by_func_value, reverse=True)
-    return simplex
+# def build_simplex(x=[0.0, 0.0], l=2, n=3):
+#     # массив, содержащий точки симплекса
+#     simplex = [x]
+#     n_rest = n - 1
+#     for i in range(2, n_rest + 2):
+#         xi = [0, 0]
+#         for j in range (1, n_rest + 1):
+#             if i == j + 1:
+#                 xi[j-1] = x[0] + (math.sqrt(n_rest + 1) - 1) / (n_rest * math.sqrt(2)) * l
+#             else:
+#                 xi[j-1] = x[1] + (math.sqrt(n_rest + 1) + n_rest - 1) / (n_rest * math.sqrt(2)) * l
+#         simplex.append(xi)
+#     # сортировка для правильной нумерации вершин
+#     simplex.sort(key=sort_by_func_value, reverse=True)
+#     return simplex
 
 # получение середины отрезка между первыми двумя точками в симплексе
 def get_middle(simplex):
@@ -109,7 +109,7 @@ def nelder_mead(alpha, beta, ghamma, maxiter):
                 w = xc
         simplex = [w, g, b]
         print(f"Cимплекс обновлен {simplex}")
-        simplex.sort(key=sort_by_func_value, reverse=True)
+        simplex.sort(key=sort_by_func_value)
 
     # точка минимума функции
     x_min = simplex[-1]
@@ -129,7 +129,7 @@ if __name__ == "__main__":
     # коэффициент редукции симплекса
     delta = 0.5
     # максимальное количество итераций
-    maxiter = 10
+    maxiter = 50
     
     x_min, f_min = nelder_mead(alpha, beta, ghamma, maxiter)
     check_answer(x_min, f_min)
